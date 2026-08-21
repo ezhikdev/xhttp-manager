@@ -1,24 +1,40 @@
 # XHTTP Manager
 
-Менеджер для добавления доменов, XHTTP-путей и внутренних портов Xray.
+Небольшая self-hosted панель для управления доменами и XHTTP-маршрутами nginx к локальным портам Xray.
 
-Small, nginx-only control panel for routing XHTTP paths to local Xray ports on Ubuntu/Debian.
+> Проект находится на стадии MVP. Первую установку выполняйте на тестовой ноде с доступом к консоли.
 
-> **MVP / test release.** Use it on a test server first and keep your existing nginx configuration under version control or backed up.
+## Установка одной командой
 
-## What it does
+Поддерживаются Ubuntu 22.04/24.04 и Debian 12. Вставьте в терминал одну строку:
 
-- Installs an isolated FastAPI service managed by systemd.
-- Backs up the existing `/etc/nginx` configuration before installing anything.
-- Lets you manage origin domains from a web UI.
-- Generates one nginx `server` config per origin and tests it with `nginx -t` before reload.
-- Keeps timestamped generated-config revisions and supports reverting to a previous revision.
+```bash
+sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates; curl -fsSL https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh | bash -s -- --non-interactive'
+```
 
-For each origin, set a domain, XHTTP path, local Xray port and optional stub directory. A request to the XHTTP path is proxied to `127.0.0.1:<port>` with buffering and caching disabled; other requests serve the stub or return 404.
+Команда сама:
 
-## Supported systems
+- установит nginx, Python и остальные зависимости;
+- скачает актуальную версию XHTTP Manager с GitHub;
+- сохранит резервную копию текущей конфигурации nginx;
+- создаст отдельного системного пользователя и Python-окружение;
+- установит и запустит systemd-сервис;
+- сгенерирует пароль панели;
+- проверит конфигурацию командой `nginx -t`.
 
-Ubuntu 22.04/24.04 and Debian 12. Run the installer as root:
+После завершения установщик выведет готовые данные для входа:
+
+```text
+URL: http://SERVER_IP:8765/xhttp-manager
+Login: admin
+Password: сгенерированный_пароль
+```
+
+Сохраните пароль сразу после установки. Если используется облачный firewall, откройте выбранный порт только для своего IP или VPN.
+
+## Обычная установка из клонированного репозитория
+
+Этот вариант позволяет вручную выбрать логин, пароль и порт панели:
 
 ```bash
 git clone https://github.com/ezhikdev/xhttp-manager.git
@@ -26,49 +42,45 @@ cd xhttp-manager
 sudo bash install.sh
 ```
 
-The installer asks for panel credentials and port (default `8765`). Press Enter at either credential prompt to generate a strong value. It prints the panel address on completion:
+Если оставить пароль пустым, установщик сгенерирует его автоматически. Порт по умолчанию — `8765`.
 
-```text
-http://SERVER_IP:8765/xhttp-manager
-```
+## Возможности
 
-## Security notes
+- добавление, изменение и удаление origin-доменов через браузер;
+- настройка отдельного XHTTP-пути и локального порта Xray;
+- проксирование только на `127.0.0.1`;
+- отключённые буферизация и кэширование для XHTTP;
+- выдача сайта-заглушки или ответа 404 для остальных запросов;
+- отдельная nginx-конфигурация для каждого origin;
+- обязательная проверка `nginx -t` перед перезагрузкой;
+- хранение ревизий конфигурации и откат предыдущего изменения.
 
-- The panel is plain HTTP in this MVP. Put it behind a VPN/firewall, or reverse proxy it with TLS before exposing it publicly.
-- Three failed sign-in attempts from one IP block further attempts from that IP for five minutes. These values can be changed with `LOGIN_MAX_ATTEMPTS` and `LOGIN_BLOCK_SECONDS` in `/etc/xhttp-manager/config.env`.
-- The installer grants the service user passwordless access only to `nginx -t` and `systemctl reload nginx` so it can safely apply validated changes.
-- The XHTTP target is deliberately restricted to localhost and ports `1–65535`.
-- `stub root` must be an absolute directory. Ensure the nginx worker can read it.
+## Безопасность
 
-## Files installed on the server
+- Панель MVP работает по обычному HTTP. Не открывайте её всему интернету без firewall, VPN или HTTPS reverse proxy.
+- После трёх неверных попыток вход блокируется для IP-адреса на пять минут.
+- Пароль хранится как PBKDF2-SHA256-хеш с солью.
+- Сервисный пользователь может через `sudo` выполнить только `nginx -t` и `systemctl reload nginx`.
+- Порт назначения ограничен диапазоном `1–65535`, а соединение направляется только на localhost.
+- Каталог заглушки должен быть абсолютным Linux-путём, доступным для чтения nginx.
 
-| Path | Purpose |
-| --- | --- |
-| `/etc/xhttp-manager/config.env` | Panel settings and password hash |
-| `/etc/xhttp-manager/origins.json` | Origin records |
-| `/etc/xhttp-manager/nginx-revisions/` | Generated config revisions and the active `current` link |
-| `/etc/nginx/conf.d/xhttp-manager.conf` | Stable nginx include installed by the manager |
-| `/var/backups/xhttp-manager/` | Pre-install nginx backup |
-| `/opt/xhttp-manager/` | Application and virtual environment |
-
-## Operations
+## Управление сервисом
 
 ```bash
 sudo systemctl status xhttp-manager
-sudo journalctl -u xhttp-manager -f
 sudo systemctl restart xhttp-manager
+sudo journalctl -u xhttp-manager -f
 ```
 
-The UI’s **Revert latest change** button restores the previous generated revision, runs `nginx -t`, and reloads nginx only on success. If a generated candidate fails validation, the live revision remains untouched.
+## Файлы на сервере
 
-## Development
+| Путь | Назначение |
+| --- | --- |
+| `/opt/xhttp-manager/` | Приложение и виртуальное окружение Python |
+| `/etc/xhttp-manager/config.env` | Настройки панели и хеш пароля |
+| `/etc/xhttp-manager/origins.json` | Список origin-доменов |
+| `/etc/xhttp-manager/nginx-revisions/` | Ревизии конфигурации и активная ссылка `current` |
+| `/etc/nginx/conf.d/xhttp-manager.conf` | Подключение управляемых конфигураций nginx |
+| `/var/backups/xhttp-manager/` | Резервные копии nginx перед установкой |
 
-```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-set -a; . ./dev.env; set +a
-uvicorn app.main:app --host 127.0.0.1 --port 8765
-```
-
-For local development, create `dev.env` from the variables in `install.sh`; set `XHTTP_MANAGER_SKIP_NGINX=1` to skip applying nginx.
+Кнопка «Revert latest change» в панели переключает nginx на предыдущую ревизию. Перед применением отката также выполняется `nginx -t`.

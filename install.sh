@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+NON_INTERACTIVE=0
+case "${1:-}" in
+  --non-interactive) NON_INTERACTIVE=1 ;;
+  "") ;;
+  *) echo "Unknown option: $1"; exit 1 ;;
+esac
+
 [[ ${EUID} -eq 0 ]] || { echo 'Run as root: sudo ./install.sh'; exit 1; }
 source /etc/os-release
 case "${ID}:${VERSION_ID}" in
@@ -18,15 +25,46 @@ DEFAULT_PORT=8765
 echo 'Installing required packages…'
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq nginx python3 python3-venv python3-pip openssl sudo iproute2 curl tar
+apt-get install -y -qq nginx python3 python3-venv python3-pip openssl sudo iproute2 curl ca-certificates tar
 
-read -rp "Panel login [admin]: " PANEL_USER
-PANEL_USER=${PANEL_USER:-admin}
+SOURCE_DIR=""
+SCRIPT_SOURCE=${BASH_SOURCE[0]:-}
+if [[ -n "$SCRIPT_SOURCE" && -f "$SCRIPT_SOURCE" ]]; then
+  SOURCE_DIR=$(cd -- "$(dirname -- "$SCRIPT_SOURCE")" && pwd)
+fi
+
+DOWNLOAD_DIR=""
+cleanup() {
+  if [[ "$DOWNLOAD_DIR" == /tmp/xhttp-manager.* && -d "$DOWNLOAD_DIR" ]]; then
+    rm -rf -- "$DOWNLOAD_DIR"
+  fi
+}
+trap cleanup EXIT
+
+if [[ ! -f "$SOURCE_DIR/requirements.txt" || ! -d "$SOURCE_DIR/app" ]]; then
+  echo 'Downloading XHTTP Manager…'
+  DOWNLOAD_DIR=$(mktemp -d /tmp/xhttp-manager.XXXXXX)
+  curl -fsSL --retry 3 \
+    https://github.com/ezhikdev/xhttp-manager/archive/refs/heads/main.tar.gz \
+    -o "$DOWNLOAD_DIR/source.tar.gz"
+  tar -xzf "$DOWNLOAD_DIR/source.tar.gz" -C "$DOWNLOAD_DIR" --strip-components=1
+  SOURCE_DIR=$DOWNLOAD_DIR
+fi
+
+if (( NON_INTERACTIVE )); then
+  PANEL_USER=${PANEL_USER:-admin}
+  PANEL_PASS=${PANEL_PASS:-}
+  PANEL_PORT=${PANEL_PORT:-$DEFAULT_PORT}
+else
+  read -rp "Panel login [admin]: " PANEL_USER
+  PANEL_USER=${PANEL_USER:-admin}
+  read -rsp "Panel password (Enter to generate): " PANEL_PASS; echo
+  read -rp "Panel port [${DEFAULT_PORT}]: " PANEL_PORT
+  PANEL_PORT=${PANEL_PORT:-$DEFAULT_PORT}
+fi
+
 [[ "$PANEL_USER" =~ ^[A-Za-z0-9_.@-]{1,64}$ ]] || { echo 'Login may contain only letters, numbers, dot, underscore, @ and hyphen.'; exit 1; }
-read -rsp "Panel password (Enter to generate): " PANEL_PASS; echo
 if [[ -z "$PANEL_PASS" ]]; then PANEL_PASS=$(openssl rand -base64 24 | tr -d '=+/\n' | cut -c1-20); GENERATED_PASS=1; fi
-read -rp "Panel port [${DEFAULT_PORT}]: " PANEL_PORT
-PANEL_PORT=${PANEL_PORT:-$DEFAULT_PORT}
 [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )) || { echo 'Invalid port.'; exit 1; }
 
 if ss -ltn "sport = :${PANEL_PORT}" | grep -q LISTEN; then
@@ -41,9 +79,9 @@ echo "Existing nginx configuration backed up to $BACKUP_DIR/nginx-${STAMP}.tar.g
 id -u "$APP_USER" >/dev/null 2>&1 || useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin "$APP_USER"
 mkdir -p "$APP_DIR" "$ETC_DIR/nginx-revisions" "$ETC_DIR/backups"
 install -m 0750 -o "$APP_USER" -g "$APP_USER" -d "$ETC_DIR/nginx-revisions" "$ETC_DIR/backups"
-install -m 0644 -o root -g root requirements.txt "$APP_DIR/requirements.txt"
+install -m 0644 -o root -g root "$SOURCE_DIR/requirements.txt" "$APP_DIR/requirements.txt"
 rm -rf "$APP_DIR/app"
-cp -a app "$APP_DIR/app"
+cp -a "$SOURCE_DIR/app" "$APP_DIR/app"
 chown -R root:root "$APP_DIR/app"
 python3 -m venv "$APP_DIR/venv"
 "$APP_DIR/venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q -r "$APP_DIR/requirements.txt"
@@ -69,10 +107,12 @@ cat > /etc/nginx/conf.d/xhttp-manager.conf <<EOF
 include ${ETC_DIR}/nginx-revisions/current/*.conf;
 EOF
 mkdir -p "$ETC_DIR/nginx-revisions/initial"
-printf '[]\n' > "$ETC_DIR/nginx-revisions/initial/origins.json"
-chown "$APP_USER":"$APP_USER" "$ETC_DIR/nginx-revisions/initial/origins.json"
-ln -sfn "$ETC_DIR/nginx-revisions/initial" "$ETC_DIR/nginx-revisions/current"
-chown -h "$APP_USER":"$APP_USER" "$ETC_DIR/nginx-revisions/current"
+if [[ ! -e "$ETC_DIR/nginx-revisions/current" && ! -L "$ETC_DIR/nginx-revisions/current" ]]; then
+  printf '[]\n' > "$ETC_DIR/nginx-revisions/initial/origins.json"
+  chown "$APP_USER":"$APP_USER" "$ETC_DIR/nginx-revisions/initial/origins.json"
+  ln -s "$ETC_DIR/nginx-revisions/initial" "$ETC_DIR/nginx-revisions/current"
+  chown -h "$APP_USER":"$APP_USER" "$ETC_DIR/nginx-revisions/current"
+fi
 
 NGINX_BIN=$(command -v nginx)
 SYSTEMCTL_BIN=$(command -v systemctl)
