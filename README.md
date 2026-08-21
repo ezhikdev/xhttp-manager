@@ -72,10 +72,3 @@ uvicorn app.main:app --host 127.0.0.1 --port 8765
 ```
 
 For local development, create `dev.env` from the variables in `install.sh`; set `XHTTP_MANAGER_SKIP_NGINX=1` to skip applying nginx.
-
-Run the automated tests with:
-
-```bash
-pip install -r requirements-dev.txt
-pytest
-```
