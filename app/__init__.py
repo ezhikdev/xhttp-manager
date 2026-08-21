@@ -1,0 +1,1 @@
+"""XHTTP Manager application."""
