@@ -86,7 +86,7 @@ chown -R root:root "$APP_DIR/app"
 python3 -m venv "$APP_DIR/venv"
 "$APP_DIR/venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q -r "$APP_DIR/requirements.txt"
 
-HASH=$(PANEL_PASS="$PANEL_PASS" "$APP_DIR/venv/bin/python" -c 'import os; from app.main import password_hash; print(password_hash(os.environ["PANEL_PASS"]))')
+HASH=$(cd "$APP_DIR" && PANEL_PASS="$PANEL_PASS" "$APP_DIR/venv/bin/python" -c 'import os; from app.main import password_hash; print(password_hash(os.environ["PANEL_PASS"]))')
 cat > "$ETC_DIR/config.env" <<EOF
 PANEL_USER=${PANEL_USER}
 PANEL_PASSWORD_HASH=${HASH}
