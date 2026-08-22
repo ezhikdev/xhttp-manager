@@ -144,7 +144,6 @@ WorkingDirectory=${APP_DIR}
 ExecStart=${APP_DIR}/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port \${PANEL_PORT}
 Restart=on-failure
 RestartSec=3
-NoNewPrivileges=true
 PrivateTmp=true
 
 [Install]
