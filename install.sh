@@ -67,8 +67,17 @@ fi
 if [[ -z "$PANEL_PASS" ]]; then PANEL_PASS=$(openssl rand -base64 24 | tr -d '=+/\n' | cut -c1-20); GENERATED_PASS=1; fi
 [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )) || { echo 'Invalid port.'; exit 1; }
 
-if ss -ltn "sport = :${PANEL_PORT}" | grep -q LISTEN; then
-  echo "Port ${PANEL_PORT} is already in use."; exit 1
+PORT_LISTENER=$(ss -H -ltnp "sport = :${PANEL_PORT}" || true)
+if [[ -n "$PORT_LISTENER" ]]; then
+  MANAGER_PID=$(systemctl show xhttp-manager --property MainPID --value 2>/dev/null || true)
+  if [[ -n "$MANAGER_PID" && "$MANAGER_PID" != "0" && "$PORT_LISTENER" == *"pid=${MANAGER_PID},"* ]]; then
+    echo "Existing XHTTP Manager detected on port ${PANEL_PORT}; it will be restarted after the update."
+  else
+    echo "Port ${PANEL_PORT} is used by another process:"
+    echo "$PORT_LISTENER"
+    echo 'Refusing to stop an unrelated service automatically.'
+    exit 1
+  fi
 fi
 
 STAMP=$(date +%Y%m%d-%H%M%S)
@@ -144,7 +153,9 @@ EOF
 
 nginx -t
 systemctl daemon-reload
-systemctl enable --now xhttp-manager
+systemctl enable xhttp-manager
+systemctl restart xhttp-manager
+systemctl is-active --quiet xhttp-manager
 SERVER_IP=$(hostname -I | awk '{print $1}')
 echo
 echo 'XHTTP Manager is running.'
