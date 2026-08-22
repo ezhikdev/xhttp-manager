@@ -177,11 +177,15 @@ EOF
 chmod 0440 /etc/sudoers.d/xhttp-manager
 visudo -cf /etc/sudoers.d/xhttp-manager >/dev/null
 
-sudo -u "$APP_USER" env \
-  PYTHONPATH="$APP_DIR" \
-  XHTTP_MANAGER_DIR="$ETC_DIR" \
-  XHTTP_MANAGER_SKIP_NGINX=0 \
-  "$APP_DIR/venv/bin/python" -c 'from app.main import apply, load_origins; items = load_origins(); apply(items) if items else None'
+if ! (
+  cd "$APP_DIR"
+  sudo -u "$APP_USER" env \
+    XHTTP_MANAGER_DIR="$ETC_DIR" \
+    XHTTP_MANAGER_SKIP_NGINX=0 \
+    "$APP_DIR/venv/bin/python" -c 'import sys; sys.path.insert(0, "/opt/xhttp-manager"); from app.main import apply, load_origins; items = load_origins(); apply(items) if items else None'
+); then
+  echo 'Warning: existing origins were not regenerated; save them once in the panel after installation.'
+fi
 
 cat > /etc/systemd/system/xhttp-manager.service <<EOF
 [Unit]
