@@ -32,6 +32,7 @@ PASS_HASH = os.getenv("PANEL_PASSWORD_HASH", "")
 LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", "3"))
 LOGIN_BLOCK_SECONDS = int(os.getenv("LOGIN_BLOCK_SECONDS", "300"))
 SKIP_NGINX = os.getenv("XHTTP_MANAGER_SKIP_NGINX") == "1"
+SKIP_RELOAD = os.getenv("XHTTP_MANAGER_SKIP_RELOAD") == "1"
 DOMAIN_RE = re.compile(r"^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$")
 SAFE_NGINX_PATH_RE = re.compile(r"^/[A-Za-z0-9._~%/@+=:-]*$")
 
@@ -161,7 +162,7 @@ def render_route(origin, upstream_name):
         proxy_cache off;
         proxy_max_temp_file_size 0;
         gzip off;
-        proxy_connect_timeout 60s;
+        proxy_connect_timeout 5s;
         proxy_send_timeout 3600s;
         proxy_read_timeout 3600s;
         send_timeout 3600s;
@@ -171,27 +172,28 @@ def render_route(origin, upstream_name):
     }}'''
 
 
+def upstream_name(port):
+    return f"xhttp_manager_xray_{port}"
+
+
+def render_upstreams(ports):
+    return "\n\n".join(
+        f'''upstream {upstream_name(port)} {{
+    server 127.0.0.1:{port};
+    keepalive 32;
+    keepalive_requests 1000;
+    keepalive_timeout 30s;
+}}'''
+        for port in sorted(ports)
+    ) + "\n"
+
+
 def render_domain(domain, routes):
     ordered = sorted(routes, key=lambda item: (item["path"], item["id"]))
     stub_enabled = ordered[0]["stub_enabled"]
     stub_root = ordered[0]["stub_root"]
-    domain_hash = hashlib.sha256(domain.encode("utf-8")).hexdigest()[:12]
-    ports = sorted({item["port"] for item in ordered})
-    upstream_names = {
-        port: f"xhttp_{domain_hash}_{port}"
-        for port in ports
-    }
-    upstream_blocks = "\n\n".join(
-        f'''upstream {upstream_names[port]} {{
-    server 127.0.0.1:{port};
-    keepalive 256;
-    keepalive_requests 10000;
-    keepalive_timeout 75s;
-}}'''
-        for port in ports
-    )
     locations = "\n\n".join(
-        render_route(item, upstream_names[item["port"]])
+        render_route(item, upstream_name(item["port"]))
         for item in ordered
     )
     fallback = (
@@ -207,18 +209,29 @@ def render_domain(domain, routes):
     route_ids = ", ".join(item["id"] for item in ordered)
     return f'''# Managed by XHTTP Manager. Route IDs: {route_ids}
 
-{upstream_blocks}
-
 server {{
     listen 80;
     listen [::]:80;
     server_name {domain};
+    keepalive_timeout 30s;
 
 {locations}
 
 {fallback}
 }}
 '''
+
+
+def generated_config_matches(candidate):
+    if not CURRENT.is_symlink():
+        return False
+    try:
+        current = CURRENT.resolve(strict=True)
+        candidate_files = {path.name: path.read_bytes() for path in candidate.glob("*.conf")}
+        current_files = {path.name: path.read_bytes() for path in current.glob("*.conf")}
+        return candidate_files == current_files
+    except OSError:
+        return False
 
 def previous_revision(revisions, current_name):
     ordered = sorted((p for p in revisions if p.name != "initial"), key=lambda p: p.name)
@@ -240,10 +253,17 @@ def apply(items):
     grouped = {}
     for item in items:
         grouped.setdefault(item["domain"], []).append(item)
+    ports = {item["port"] for item in items}
+    if ports:
+        (candidate / "000-upstreams.conf").write_text(render_upstreams(ports))
     for domain in sorted(grouped):
         config_id = hashlib.sha256(domain.encode()).hexdigest()[:16]
         (candidate / f"{config_id}.conf").write_text(render_domain(domain, grouped[domain]))
     (candidate / "origins.json").write_text(json.dumps(items, indent=2) + "\n")
+    if generated_config_matches(candidate):
+        current_name = Path(os.readlink(CURRENT)).name
+        shutil.rmtree(candidate)
+        return current_name
     previous = os.readlink(CURRENT) if CURRENT.is_symlink() else None
     if not SKIP_NGINX:
         if CURRENT.exists() or CURRENT.is_symlink(): CURRENT.unlink()
@@ -254,12 +274,13 @@ def apply(items):
             if previous: CURRENT.symlink_to(previous)
             shutil.rmtree(candidate)
             raise HTTPException(400, "nginx rejected this change: " + (checked.stderr or checked.stdout)[-1200:])
-        reloaded = subprocess.run(["sudo", "systemctl", "reload", "nginx"], text=True, capture_output=True)
-        if reloaded.returncode:
-            CURRENT.unlink(missing_ok=True)
-            if previous: CURRENT.symlink_to(previous)
-            shutil.rmtree(candidate)
-            raise HTTPException(500, "nginx validated but reload failed; previous revision was restored: " + (reloaded.stderr or reloaded.stdout)[-1200:])
+        if not SKIP_RELOAD:
+            reloaded = subprocess.run(["sudo", "systemctl", "reload", "nginx"], text=True, capture_output=True)
+            if reloaded.returncode:
+                CURRENT.unlink(missing_ok=True)
+                if previous: CURRENT.symlink_to(previous)
+                shutil.rmtree(candidate)
+                raise HTTPException(500, "nginx validated but reload failed; previous revision was restored: " + (reloaded.stderr or reloaded.stdout)[-1200:])
     return stamp
 
 from starlette.middleware.sessions import SessionMiddleware
