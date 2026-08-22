@@ -17,6 +17,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
+from app.ui import HTML as PANEL_HTML, LOGIN as LOGIN_HTML
+
 CONFIG_DIR = Path(os.getenv("XHTTP_MANAGER_DIR", "/etc/xhttp-manager"))
 ORIGINS_FILE = CONFIG_DIR / "origins.json"
 REVISIONS = CONFIG_DIR / "nginx-revisions"
@@ -189,10 +191,10 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", PAS
 @app.get(PANEL_PATH, response_class=HTMLResponse)
 def page(request: Request):
     if not authenticated(request): return RedirectResponse(PANEL_PATH + "/login")
-    return HTMLResponse(HTML.replace("__PATH__", PANEL_PATH))
+    return HTMLResponse(PANEL_HTML.replace("__PATH__", PANEL_PATH))
 
 @app.get(PANEL_PATH + "/login", response_class=HTMLResponse)
-def login_page(): return HTMLResponse(LOGIN.replace("__PATH__", PANEL_PATH))
+def login_page(): return HTMLResponse(LOGIN_HTML.replace("__PATH__", PANEL_PATH))
 
 @app.post(PANEL_PATH + "/login")
 async def login(request: Request):
@@ -200,7 +202,7 @@ async def login(request: Request):
     remaining = block_remaining(ip)
     if remaining:
         return HTMLResponse(
-            LOGIN.replace("__PATH__", PANEL_PATH).replace("<!--ERROR-->", f"<p class='error'>Too many attempts. Try again in {remaining} seconds.</p>"),
+            LOGIN_HTML.replace("__PATH__", PANEL_PATH).replace("<!--ERROR-->", f"<p class='error'>Слишком много попыток. Повторите через {remaining} сек.</p>"),
             status_code=429,
             headers={"Retry-After": str(remaining)},
         )
@@ -212,10 +214,10 @@ async def login(request: Request):
         request.session["authenticated"] = True
         return RedirectResponse(PANEL_PATH, status_code=303)
     remaining = record_failed_login(ip)
-    message = f"Too many attempts. Try again in {remaining} seconds." if remaining else "Incorrect login or password."
+    message = f"Слишком много попыток. Повторите через {remaining} сек." if remaining else "Неверный логин или пароль."
     status = 429 if remaining else 401
     headers = {"Retry-After": str(remaining)} if remaining else None
-    return HTMLResponse(LOGIN.replace("__PATH__", PANEL_PATH).replace("<!--ERROR-->", f"<p class='error'>{message}</p>"), status, headers=headers)
+    return HTMLResponse(LOGIN_HTML.replace("__PATH__", PANEL_PATH).replace("<!--ERROR-->", f"<p class='error'>{message}</p>"), status, headers=headers)
 
 @app.post(PANEL_PATH + "/logout")
 def logout(request: Request): request.session.clear(); return RedirectResponse(PANEL_PATH + "/login", 303)
