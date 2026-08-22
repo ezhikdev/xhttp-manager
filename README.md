@@ -78,7 +78,7 @@ sudo journalctl -u xhttp-manager -f
 | --- | --- |
 | `/opt/xhttp-manager/` | Приложение и виртуальное окружение Python |
 | `/etc/xhttp-manager/config.env` | Настройки панели и хеш пароля |
-| `/etc/xhttp-manager/origins.json` | Список origin-доменов |
+| `/etc/xhttp-manager/data/origins.json` | Список origin-доменов |
 | `/etc/xhttp-manager/nginx-revisions/` | Ревизии конфигурации и активная ссылка `current` |
 | `/etc/nginx/conf.d/xhttp-manager.conf` | Подключение управляемых конфигураций nginx |
 | `/var/backups/xhttp-manager/` | Резервные копии nginx перед установкой |

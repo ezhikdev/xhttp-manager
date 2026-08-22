@@ -31,9 +31,9 @@ LOGIN = r'''<!doctype html>
       <!--ERROR-->
       <form method="post" action="__PATH__/login">
         <label for="username">Логин</label>
-        <input id="username" name="username" autocomplete="username" placeholder="admin" required autofocus>
+        <input id="username" name="username" autocomplete="username" required autofocus>
         <label for="password">Пароль</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Ваш пароль" required>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
         <button type="submit">Войти в панель</button>
       </form>
     </section>

@@ -20,7 +20,8 @@ from pydantic import BaseModel, Field
 from app.ui import HTML as PANEL_HTML, LOGIN as LOGIN_HTML
 
 CONFIG_DIR = Path(os.getenv("XHTTP_MANAGER_DIR", "/etc/xhttp-manager"))
-ORIGINS_FILE = CONFIG_DIR / "origins.json"
+DATA_DIR = CONFIG_DIR / "data"
+ORIGINS_FILE = DATA_DIR / "origins.json"
 REVISIONS = CONFIG_DIR / "nginx-revisions"
 CURRENT = REVISIONS / "current"
 PANEL_PATH = os.getenv("PANEL_PATH", "/xhttp-manager").rstrip("/") or "/xhttp-manager"
@@ -104,9 +105,16 @@ def load_origins():
         return []
 
 def write_origins(items):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     temp = ORIGINS_FILE.with_suffix(".new")
-    temp.write_text(json.dumps(items, indent=2) + "\n")
-    temp.replace(ORIGINS_FILE)
+    try:
+        temp.write_text(json.dumps(items, indent=2) + "\n")
+        temp.replace(ORIGINS_FILE)
+    except OSError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Не удалось сохранить origin. Проверьте права каталога данных.",
+        ) from exc
 
 def validate(origin: Origin):
     origin.domain = origin.domain.lower().strip()

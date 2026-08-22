@@ -19,6 +19,7 @@ APP=xhttp-manager
 APP_USER=xhttpmgr
 APP_DIR=/opt/${APP}
 ETC_DIR=/etc/${APP}
+DATA_DIR=${ETC_DIR}/data
 BACKUP_DIR=/var/backups/${APP}
 DEFAULT_PORT=8765
 
@@ -86,8 +87,9 @@ tar -C /etc -czf "$BACKUP_DIR/nginx-${STAMP}.tar.gz" nginx
 echo "Existing nginx configuration backed up to $BACKUP_DIR/nginx-${STAMP}.tar.gz"
 
 id -u "$APP_USER" >/dev/null 2>&1 || useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin "$APP_USER"
-mkdir -p "$APP_DIR" "$ETC_DIR/nginx-revisions" "$ETC_DIR/backups"
+mkdir -p "$APP_DIR" "$ETC_DIR/nginx-revisions" "$ETC_DIR/backups" "$DATA_DIR"
 install -m 0750 -o "$APP_USER" -g "$APP_USER" -d "$ETC_DIR/nginx-revisions" "$ETC_DIR/backups"
+install -m 0750 -o "$APP_USER" -g "$APP_USER" -d "$DATA_DIR"
 install -m 0644 -o root -g root "$SOURCE_DIR/requirements.txt" "$APP_DIR/requirements.txt"
 rm -rf "$APP_DIR/app"
 cp -a "$SOURCE_DIR/app" "$APP_DIR/app"
@@ -107,9 +109,17 @@ XHTTP_MANAGER_DIR=${ETC_DIR}
 EOF
 chmod 0640 "$ETC_DIR/config.env"
 chown root:"$APP_USER" "$ETC_DIR/config.env"
-[[ -f "$ETC_DIR/origins.json" ]] || printf '[]\n' > "$ETC_DIR/origins.json"
-chown "$APP_USER":"$APP_USER" "$ETC_DIR/origins.json"
-chmod 0640 "$ETC_DIR/origins.json"
+if [[ ! -f "$DATA_DIR/origins.json" ]]; then
+  if [[ -f "$ETC_DIR/nginx-revisions/current/origins.json" ]]; then
+    cp -L "$ETC_DIR/nginx-revisions/current/origins.json" "$DATA_DIR/origins.json"
+  elif [[ -f "$ETC_DIR/origins.json" ]]; then
+    mv "$ETC_DIR/origins.json" "$DATA_DIR/origins.json"
+  else
+    printf '[]\n' > "$DATA_DIR/origins.json"
+  fi
+fi
+chown "$APP_USER":"$APP_USER" "$DATA_DIR/origins.json"
+chmod 0640 "$DATA_DIR/origins.json"
 
 cat > /etc/nginx/conf.d/xhttp-manager.conf <<EOF
 # Managed by XHTTP Manager. Do not edit generated origin files directly.
