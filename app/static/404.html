@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>404 — Маршрут не найден</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090a0a;
+      --surface: rgba(16, 17, 17, .78);
+      --text: #f3f2ee;
+      --muted: #aaa8a2;
+      --faint: #74736f;
+      --border: rgba(255, 255, 255, .11);
+      --green: #78e6ad;
+      --green-soft: rgba(120, 230, 173, .16);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      overflow: auto;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(120, 230, 173, .075), transparent 31rem),
+        linear-gradient(rgba(255, 255, 255, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 48px 48px, 48px 48px, auto;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 18%, rgba(9, 10, 10, .28) 58%, rgba(9, 10, 10, .84) 100%);
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: .72;
+    }
+
+    main {
+      position: relative;
+      z-index: 2;
+      width: min(760px, 100%);
+      padding: clamp(32px, 6vw, 64px) 24px;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(18, 19, 19, .88), var(--surface));
+      box-shadow: 0 32px 100px rgba(0, 0, 0, .52), inset 0 1px rgba(255, 255, 255, .035);
+      backdrop-filter: blur(10px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 16px;
+      color: var(--muted);
+      font: 600 12px/1.4 ui-monospace, "SFMono-Regular", Consolas, monospace;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px var(--green);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(7.5rem, 27vw, 15rem);
+      font-weight: 780;
+      line-height: .76;
+      letter-spacing: -.085em;
+      transform: translateX(-.045em);
+      color: transparent;
+      background: linear-gradient(180deg, #fff 8%, #cbc9c3 58%, #6c6c67 112%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      filter: drop-shadow(0 14px 34px rgba(0, 0, 0, .42));
+    }
+
+    h2 {
+      margin: clamp(32px, 6vw, 48px) 0 12px;
+      font-size: clamp(1.45rem, 4vw, 2rem);
+      line-height: 1.2;
+      letter-spacing: -.025em;
+    }
+
+    .message {
+      max-width: 520px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.4vw, 1.08rem);
+      line-height: 1.65;
+    }
+
+    .code {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 8px 12px;
+      border: 1px solid rgba(120, 230, 173, .2);
+      border-radius: 999px;
+      background: var(--green-soft);
+      color: var(--green);
+      font: 600 12px/1.3 ui-monospace, "SFMono-Regular", Consolas, monospace;
+      letter-spacing: .04em;
+    }
+
+    @media (max-height: 560px) {
+      main { padding-block: 20px; }
+      h1 { font-size: clamp(6rem, 25vh, 8rem); }
+      h2 { margin-top: 24px; }
+      .code { margin-top: 16px; }
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 16px; }
+      main { padding-inline: 18px; border-radius: 14px; }
+      h1 { font-size: clamp(7rem, 42vw, 11rem); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      canvas { opacity: .42; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="matrix" aria-hidden="true"></canvas>
+  <main aria-labelledby="error-title" aria-describedby="error-description">
+    <p class="eyebrow">xhttp · manager</p>
+    <h1 aria-label="Ошибка 404">404</h1>
+    <h2 id="error-title">Маршрут не найден</h2>
+    <p class="message" id="error-description">Этот домен или путь не настроен. Проверьте адрес и попробуйте снова.</p>
+    <span class="code">HTTP · NOT_FOUND</span>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById("matrix");
+      const context = canvas.getContext("2d", { alpha: true });
+      const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const glyphs = "00101101011010010110100101101001";
+      let width = 0;
+      let height = 0;
+      let pixelRatio = 1;
+      let frame = 0;
+      let previous = 0;
+
+      function resize() {
+        cancelAnimationFrame(frame);
+        pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.round(width * pixelRatio);
+        canvas.height = Math.round(height * pixelRatio);
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        draw(performance.now(), true);
+      }
+
+      function draw(time, force = false) {
+        if (!force && time - previous < 42) {
+          frame = requestAnimationFrame(draw);
+          return;
+        }
+        previous = time;
+        context.clearRect(0, 0, width, height);
+        context.font = '600 13px ui-monospace, "SFMono-Regular", Consolas, monospace';
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+
+        const spacing = width < 600 ? 26 : 32;
+        const waves = width < 600 ? 7 : 11;
+        const amplitude = Math.min(54, height * .065);
+        const phase = motion.matches ? 0 : time * .00055;
+
+        for (let wave = -Math.floor(waves / 2); wave <= Math.floor(waves / 2); wave += 1) {
+          const distance = Math.abs(wave) / Math.max(1, waves / 2);
+          for (let x = -spacing; x <= width + spacing; x += spacing) {
+            const curve = Math.sin(x * .012 + phase * 2.4 + wave * .72) * amplitude;
+            const ripple = Math.sin(x * .0045 - phase * 1.25) * amplitude * .45;
+            const y = height * .5 + wave * spacing * 1.42 + curve + ripple;
+            if (y < -20 || y > height + 20) continue;
+            const index = Math.abs(Math.floor(x / spacing) + wave * 7 + Math.floor(phase * 9)) % glyphs.length;
+            const alpha = Math.max(.08, .42 - distance * .25);
+            context.fillStyle = `rgba(120, 230, 173, ${alpha})`;
+            context.fillText(glyphs[index], x, y);
+          }
+        }
+
+        if (!motion.matches) frame = requestAnimationFrame(draw);
+      }
+
+      function updateMotion() {
+        cancelAnimationFrame(frame);
+        draw(performance.now(), true);
+        if (!motion.matches) frame = requestAnimationFrame(draw);
+      }
+
+      let resizeTimer;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(resize, 120);
+      }, { passive: true });
+      motion.addEventListener?.("change", updateMotion);
+      resize();
+    })();
+  </script>
+</body>
+</html>

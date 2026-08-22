@@ -94,6 +94,8 @@ install -m 0644 -o root -g root "$SOURCE_DIR/requirements.txt" "$APP_DIR/require
 rm -rf "$APP_DIR/app"
 cp -a "$SOURCE_DIR/app" "$APP_DIR/app"
 chown -R root:root "$APP_DIR/app"
+chmod 0755 "$APP_DIR" "$APP_DIR/app" "$APP_DIR/app/static"
+chmod 0644 "$APP_DIR/app/static/404.html"
 python3 -m venv "$APP_DIR/venv"
 "$APP_DIR/venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q -r "$APP_DIR/requirements.txt"
 
@@ -121,10 +123,43 @@ fi
 chown "$APP_USER":"$APP_USER" "$DATA_DIR/origins.json"
 chmod 0640 "$DATA_DIR/origins.json"
 
+if [[ -L /etc/nginx/sites-enabled/default ]]; then
+  mkdir -p /etc/nginx/sites-disabled
+  mv /etc/nginx/sites-enabled/default "/etc/nginx/sites-disabled/default-${STAMP}"
+fi
+
 cat > /etc/nginx/conf.d/xhttp-manager.conf <<EOF
 # Managed by XHTTP Manager. Do not edit generated origin files directly.
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+
+    error_page 404 /.xhttp-manager/errors/404.html;
+
+    location = /.xhttp-manager/errors/404.html {
+        internal;
+        alias ${APP_DIR}/app/static/404.html;
+    }
+
+    location / {
+        return 404;
+    }
+}
+
 include ${ETC_DIR}/nginx-revisions/current/*.conf;
 EOF
+
+NGINX_DUMP=$(nginx -T 2>&1 || true)
+if [[ "$NGINX_DUMP" != *"Managed by XHTTP Manager"* ]]; then
+  mkdir -p /etc/nginx/sites-enabled
+  ln -sfn /etc/nginx/conf.d/xhttp-manager.conf /etc/nginx/sites-enabled/xhttp-manager.conf
+  NGINX_DUMP=$(nginx -T 2>&1 || true)
+fi
+if [[ "$NGINX_DUMP" != *"Managed by XHTTP Manager"* ]]; then
+  echo 'nginx.conf does not load conf.d or sites-enabled; XHTTP Manager cannot activate its routes.'
+  exit 1
+fi
 mkdir -p "$ETC_DIR/nginx-revisions/initial"
 if [[ ! -e "$ETC_DIR/nginx-revisions/current" && ! -L "$ETC_DIR/nginx-revisions/current" ]]; then
   printf '[]\n' > "$ETC_DIR/nginx-revisions/initial/origins.json"
@@ -140,6 +175,11 @@ ${APP_USER} ALL=(root) NOPASSWD: ${NGINX_BIN} -t, ${SYSTEMCTL_BIN} reload nginx
 EOF
 chmod 0440 /etc/sudoers.d/xhttp-manager
 visudo -cf /etc/sudoers.d/xhttp-manager >/dev/null
+
+sudo -u "$APP_USER" env \
+  XHTTP_MANAGER_DIR="$ETC_DIR" \
+  XHTTP_MANAGER_SKIP_NGINX=0 \
+  "$APP_DIR/venv/bin/python" -c 'from app.main import apply, load_origins; items = load_origins(); apply(items) if items else None'
 
 cat > /etc/systemd/system/xhttp-manager.service <<EOF
 [Unit]
@@ -161,6 +201,7 @@ WantedBy=multi-user.target
 EOF
 
 nginx -t
+systemctl reload nginx
 systemctl daemon-reload
 systemctl enable xhttp-manager
 systemctl restart xhttp-manager

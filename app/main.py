@@ -24,6 +24,8 @@ DATA_DIR = CONFIG_DIR / "data"
 ORIGINS_FILE = DATA_DIR / "origins.json"
 REVISIONS = CONFIG_DIR / "nginx-revisions"
 CURRENT = REVISIONS / "current"
+ERROR_PAGE_URI = "/.xhttp-manager/errors/404.html"
+ERROR_PAGE_FILE = "/opt/xhttp-manager/app/static/404.html"
 PANEL_PATH = os.getenv("PANEL_PATH", "/xhttp-manager").rstrip("/") or "/xhttp-manager"
 USER = os.getenv("PANEL_USER", "admin")
 PASS_HASH = os.getenv("PANEL_PASSWORD_HASH", "")
@@ -122,6 +124,8 @@ def validate(origin: Origin):
     if not DOMAIN_RE.match(origin.domain): raise HTTPException(422, "Enter a valid hostname, without scheme or port.")
     if not SAFE_NGINX_PATH_RE.match(origin.path) or ".." in origin.path:
         raise HTTPException(422, "Path must start with / and use only safe URL characters.")
+    if origin.path == ERROR_PAGE_URI:
+        raise HTTPException(422, "This path is reserved by XHTTP Manager.")
     if origin.stub_enabled:
         if not origin.stub_root or not PurePosixPath(origin.stub_root).is_absolute() or not SAFE_NGINX_PATH_RE.match(origin.stub_root):
             raise HTTPException(422, "Stub root must be a safe absolute directory when stub is enabled.")
@@ -133,6 +137,17 @@ def render(origin):
     listen 80;
     listen [::]:80;
     server_name {origin['domain']};
+
+    if ($host != {origin['domain']}) {{
+        return 404;
+    }}
+
+    error_page 404 {ERROR_PAGE_URI};
+
+    location = {ERROR_PAGE_URI} {{
+        internal;
+        alias {ERROR_PAGE_FILE};
+    }}
 
     location = {origin['path']} {{
         proxy_pass http://127.0.0.1:{origin['port']};
