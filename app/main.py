@@ -149,7 +149,7 @@ def render(origin):
         alias {ERROR_PAGE_FILE};
     }}
 
-    location = {origin['path']} {{
+    location ^~ {origin['path']} {{
         proxy_pass http://127.0.0.1:{origin['port']};
         proxy_http_version 1.1;
         proxy_set_header Host $host;

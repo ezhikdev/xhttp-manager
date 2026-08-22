@@ -9,7 +9,7 @@
 Поддерживаются Ubuntu 22.04/24.04 и Debian 12. Вставьте в терминал одну строку:
 
 ```bash
-sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates; curl -fsSL https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh | bash -s -- --non-interactive'
+sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates; curl -fsSL -H "Cache-Control: no-cache" "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?cache=$(date +%s)" | bash -s -- --non-interactive'
 ```
 
 Команда сама:
@@ -47,7 +47,7 @@ sudo bash install.sh
 ## Возможности
 
 - добавление, изменение и удаление origin-доменов через браузер;
-- настройка отдельного XHTTP-пути и локального порта Xray;
+- настройка отдельного XHTTP-префикса и локального порта Xray, включая дочерние URI сессий;
 - проксирование только на `127.0.0.1`;
 - отключённые буферизация и кэширование для XHTTP;
 - выдача сайта-заглушки или фирменной страницы 404 для остальных запросов;
