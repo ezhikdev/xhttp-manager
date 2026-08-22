@@ -45,8 +45,9 @@ trap cleanup EXIT
 if [[ ! -f "$SOURCE_DIR/requirements.txt" || ! -d "$SOURCE_DIR/app" ]]; then
   echo 'Downloading XHTTP Manager…'
   DOWNLOAD_DIR=$(mktemp -d /tmp/xhttp-manager.XXXXXX)
-  curl -fsSL --retry 3 \
-    https://github.com/ezhikdev/xhttp-manager/archive/refs/heads/main.tar.gz \
+  CACHE_BUSTER=$(date +%s)
+  curl -fsSL --retry 3 -H 'Cache-Control: no-cache' \
+    "https://github.com/ezhikdev/xhttp-manager/archive/refs/heads/main.tar.gz?cache=${CACHE_BUSTER}" \
     -o "$DOWNLOAD_DIR/source.tar.gz"
   tar -xzf "$DOWNLOAD_DIR/source.tar.gz" -C "$DOWNLOAD_DIR" --strip-components=1
   SOURCE_DIR=$DOWNLOAD_DIR
@@ -177,6 +178,7 @@ chmod 0440 /etc/sudoers.d/xhttp-manager
 visudo -cf /etc/sudoers.d/xhttp-manager >/dev/null
 
 sudo -u "$APP_USER" env \
+  PYTHONPATH="$APP_DIR" \
   XHTTP_MANAGER_DIR="$ETC_DIR" \
   XHTTP_MANAGER_SKIP_NGINX=0 \
   "$APP_DIR/venv/bin/python" -c 'from app.main import apply, load_origins; items = load_origins(); apply(items) if items else None'
