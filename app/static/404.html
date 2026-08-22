@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>404 — Маршрут не найден</title>
+  <title>404 — Страница не найдена</title>
   <style>
     :root {
       color-scheme: dark;
@@ -70,26 +70,6 @@
       backdrop-filter: blur(10px);
     }
 
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 16px;
-      color: var(--muted);
-      font: 600 12px/1.4 ui-monospace, "SFMono-Regular", Consolas, monospace;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-    }
-
-    .eyebrow::before {
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 18px var(--green);
-    }
-
     h1 {
       margin: 0;
       font-size: clamp(7.5rem, 27vw, 15rem);
@@ -153,11 +133,10 @@
 <body>
   <canvas id="matrix" aria-hidden="true"></canvas>
   <main aria-labelledby="error-title" aria-describedby="error-description">
-    <p class="eyebrow">xhttp · manager</p>
     <h1 aria-label="Ошибка 404">404</h1>
-    <h2 id="error-title">Маршрут не найден</h2>
-    <p class="message" id="error-description">Этот домен или путь не настроен. Проверьте адрес и попробуйте снова.</p>
-    <span class="code">HTTP · NOT_FOUND</span>
+    <h2 id="error-title">Страница не найдена</h2>
+    <p class="message" id="error-description">Проверьте адрес в строке браузера и попробуйте снова.</p>
+    <span class="code">HTTP · 404</span>
   </main>
 
   <script>
