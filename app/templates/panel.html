@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="csrf-token" content="__CSRF__" />
+    <meta name="panel-path" content="__PATH__" />
+    <title>XHTTP Manager</title>
+    <link rel="stylesheet" href="__PATH__/assets/panel.css" />
+    <script src="__PATH__/assets/panel.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="__PATH__"
+        ><span class="logo">x/</span
+        ><span>XHTTP<span class="muted"> Manager</span></span></a
+      >
+      <p class="nav-label">РАБОЧЕЕ ПРОСТРАНСТВО</p>
+      <nav aria-label="Основная навигация">
+        <a href="#overview" data-tab="overview" class="active"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="3" />
+            <path d="M9 3v18M9 10h12" /></svg
+          >Обзор</a
+        ><a href="#domains" data-tab="domains"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z" /></svg
+          >Домены и пути<span id="navCount" class="badge">—</span></a
+        ><a href="#firewall" data-tab="firewall"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z" /></svg
+          >Firewall</a
+        ><a href="#settings" data-tab="settings"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16M4 17h16" />
+            <circle cx="9" cy="7" r="3" />
+            <circle cx="15" cy="17" r="3" /></svg
+          >Настройки</a
+        >
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="tag">XHTTP / CONTROL PLANE</span>
+        <p>Меньше рутины.<br />Больше контроля.</p>
+        <div class="sidebar-actions">
+          <button
+            id="themeButton"
+            class="secondary"
+            type="button"
+            aria-label="Переключить тему"
+          >
+            Светлая тема
+          </button>
+          <form method="post" action="__PATH__/logout">
+            <input type="hidden" name="csrf" value="__CSRF__" /><button
+              class="text-button"
+              type="submit"
+            >
+              Выйти ↗
+            </button>
+          </form>
+        </div>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <span id="breadcrumb">Инфраструктура / Обзор</span
+        ><span class="top-status"><i></i>Панель управления</span>
+        <div class="mobile-actions">
+          <button
+            id="mobileTheme"
+            class="text-button"
+            type="button"
+            aria-label="Переключить тему"
+          >
+            Тема
+          </button>
+          <form method="post" action="__PATH__/logout">
+            <input type="hidden" name="csrf" value="__CSRF__" />
+            <button class="text-button" type="submit">Выйти</button>
+          </form>
+        </div>
+      </header>
+      <main>
+        <div id="alert" class="alert" role="alert" hidden></div>
+        <section id="view-overview" class="view">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">ВАША ИНФРАСТРУКТУРА</p>
+              <h1>Всё под контролем<span class="accent">.</span></h1>
+              <p class="muted">
+                Маршруты, доступ и состояние сервера — в одном месте.
+              </p>
+            </div>
+            <button class="primary" data-go="domains">
+              Добавить домен <span aria-hidden="true">＋</span>
+            </button>
+          </div>
+          <div class="stats">
+            <article class="stat">
+              <span class="muted">Origin-домены</span
+              ><strong id="statDomains">—</strong
+              ><span class="caption">Единая запись для всех путей</span>
+            </article>
+            <article class="stat">
+              <span class="muted">XHTTP-пути</span
+              ><strong id="statPaths">—</strong
+              ><span class="caption">Проксирование на localhost</span>
+            </article>
+            <article class="stat">
+              <span class="muted">Firewall</span
+              ><strong id="statFirewall" class="stat-word">Загрузка</strong
+              ><span id="statFirewallHint" class="caption"
+                >Проверяем состояние правил</span
+              >
+            </article>
+            <article class="stat">
+              <span class="muted">Панель</span
+              ><strong class="stat-word">HTTP :80</strong
+              ><span class="caption">Случайный URL + авторизация</span>
+            </article>
+          </div>
+          <div class="overview-grid">
+            <article class="card route-map">
+              <div class="card-heading">
+                <div>
+                  <span class="eyebrow">ПУТЬ ЗАПРОСА</span>
+                  <h2>От домена до Xray</h2>
+                </div>
+                <span class="pill">localhost only</span>
+              </div>
+              <div class="flow">
+                <div>
+                  <span class="flow-number">01</span
+                  ><strong>Клиент / CDN</strong
+                  ><span class="muted">Origin-домен</span>
+                </div>
+                <span class="flow-arrow" aria-hidden="true">→</span>
+                <div>
+                  <span class="flow-number">02</span><strong>nginx :80</strong
+                  ><span class="muted">Разрешённые пути</span>
+                </div>
+                <span class="flow-arrow" aria-hidden="true">→</span>
+                <div>
+                  <span class="flow-number">03</span
+                  ><strong>Локальный Xray</strong
+                  ><span class="muted">127.0.0.1:порт</span>
+                </div>
+              </div>
+              <p class="inset">
+                Каждый новый маршрут проходит <code>nginx -t</code>. При ошибке
+                возвращается предыдущая конфигурация.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card-heading">
+                <h2>Состояние сервера</h2>
+                <button id="refreshSystem" class="text-button">Обновить</button>
+              </div>
+              <dl class="details">
+                <div>
+                  <dt>Проверка nginx</dt>
+                  <dd id="nginxState">—</dd>
+                </div>
+                <div>
+                  <dt>Нагрузка · 1 / 5 / 15 мин</dt>
+                  <dd id="loadState">—</dd>
+                </div>
+                <div>
+                  <dt>Свободно на диске</dt>
+                  <dd id="diskState">—</dd>
+                </div>
+                <div>
+                  <dt>Ревизия конфигурации</dt>
+                  <dd id="revisionState" class="mono">—</dd>
+                </div>
+                <div>
+                  <dt>Backend панели</dt>
+                  <dd>Unix-сокет</dd>
+                </div>
+              </dl>
+            </article>
+          </div>
+          <article class="card">
+            <div class="card-heading">
+              <div>
+                <h2>Ваши домены</h2>
+                <p class="muted">Все пути домена собраны в одной записи.</p>
+              </div>
+              <button class="secondary" data-go="domains">Управлять ↗</button>
+            </div>
+            <div id="overviewDomains" class="domain-list">
+              <p class="empty">Загружаем домены…</p>
+            </div>
+          </article>
+        </section>
+        <section id="view-domains" class="view" hidden>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">МАРШРУТИЗАЦИЯ</p>
+              <h1>Домены и пути<span class="accent">.</span></h1>
+              <p class="muted">
+                Один домен. Несколько путей. Любой локальный порт Xray.
+              </p>
+            </div>
+            <button id="rollbackButton" class="secondary">
+              Откатить изменение
+            </button>
+          </div>
+          <div class="domain-layout">
+            <article class="card">
+              <div class="card-heading">
+                <div>
+                  <h2 id="formTitle">Новый домен</h2>
+                  <p class="muted">
+                    Конфигурация применяется целиком после проверки.
+                  </p>
+                </div>
+              </div>
+              <form id="domainForm" class="card-body">
+                <label for="domainName">Origin-домен</label
+                ><input
+                  id="domainName"
+                  placeholder="example.com"
+                  required
+                  maxlength="253"
+                  autocomplete="off"
+                />
+                <div class="section-label">
+                  <label>Разрешённые пути</label
+                  ><button id="addPath" type="button" class="text-button">
+                    ＋ Добавить путь
+                  </button>
+                </div>
+                <div id="pathRows"></div>
+                <p class="hint">
+                  Путь включает дочерние URI сессий: /api и /api/…
+                </p>
+                <label class="check-row"
+                  ><input id="stubEnabled" type="checkbox" /> Показывать
+                  сайт-заглушку вне XHTTP</label
+                ><label for="stubRoot">Каталог сайта-заглушки</label
+                ><input id="stubRoot" placeholder="/var/www/stub" disabled />
+                <div class="form-actions">
+                  <button id="saveDomain" class="primary" type="submit">
+                    Сохранить домен</button
+                  ><button
+                    id="cancelDomain"
+                    class="secondary"
+                    type="button"
+                    hidden
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </form>
+            </article>
+            <article class="card domains-card">
+              <div class="card-heading">
+                <h2>Активные домены</h2>
+                <span id="domainCount" class="badge">—</span>
+              </div>
+              <div class="search-box">
+                <label for="searchDomains" class="sr-only"
+                  >Поиск по домену или пути</label
+                ><input
+                  id="searchDomains"
+                  type="search"
+                  placeholder="Найти домен или путь…"
+                /><label for="sortDomains" class="sr-only">Сортировка</label
+                ><select id="sortDomains">
+                  <option value="new">Сначала новые</option>
+                  <option value="name">По имени</option>
+                  <option value="old">Сначала старые</option>
+                </select>
+              </div>
+              <div id="domainList" class="domain-list" aria-live="polite"></div>
+            </article>
+          </div>
+        </section>
+        <section id="view-firewall" class="view" hidden>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">СЕТЕВАЯ БЕЗОПАСНОСТЬ</p>
+              <h1>Доступ по правилам<span class="accent">.</span></h1>
+              <p class="muted">
+                Входящие порты и IP-белые списки для IPv4 и IPv6.
+              </p>
+            </div>
+            <span id="firewallBadge" class="pill">Проверяем состояние</span>
+          </div>
+          <div class="notice">
+            <strong>Безопасное применение</strong>
+            <p>
+              Новые правила нужно подтвердить в течение 120 секунд. Если связь
+              потеряется, независимый таймер вернёт прежние правила. Активные
+              соединения сохраняются.
+            </p>
+          </div>
+          <div id="pendingBanner" class="pending" role="status" hidden>
+            <strong id="pendingText"></strong>
+            <div class="form-actions">
+              <button id="confirmFirewall" class="primary">
+                Связь работает — подтвердить</button
+              ><button id="cancelFirewall" class="secondary">
+                Вернуть прежние правила
+              </button>
+            </div>
+          </div>
+          <div class="domain-layout">
+            <article class="card">
+              <div class="card-heading"><h2>Правило порта</h2></div>
+              <form id="firewallForm" class="card-body">
+                <div class="two-col">
+                  <div>
+                    <label for="rulePort">Порт</label
+                    ><input
+                      id="rulePort"
+                      type="number"
+                      min="1"
+                      max="65535"
+                      value="2222"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label for="ruleProtocol">Протокол</label
+                    ><select id="ruleProtocol">
+                      <option value="tcp">TCP</option>
+                      <option value="udp">UDP</option>
+                    </select>
+                  </div>
+                </div>
+                <label for="ruleAction">Доступ</label
+                ><select id="ruleAction">
+                  <option value="allow">Разрешить</option>
+                  <option value="deny">Закрыть порт</option></select
+                ><label for="ruleSources">Разрешённые IP и подсети</label
+                ><textarea
+                  id="ruleSources"
+                  rows="4"
+                  placeholder="158.1.1.1&#10;10.20.0.0/16&#10;2001:db8::/32"
+                ></textarea>
+                <p class="hint">
+                  По одному адресу на строку или через запятую. Пустой список
+                  разрешает все IP. Белый список заменяет общее разрешение
+                  порта.
+                </p>
+                <label for="ruleNote">Комментарий</label
+                ><input
+                  id="ruleNote"
+                  maxlength="120"
+                  placeholder="Например, доступ команды"
+                />
+                <div class="form-actions">
+                  <button id="saveRule" class="primary">
+                    Добавить в изменения
+                  </button>
+                </div>
+              </form>
+            </article>
+            <article class="card">
+              <div class="card-heading">
+                <div>
+                  <h2>Входящие порты</h2>
+                  <p id="draftState" class="muted">Сохранённая конфигурация</p>
+                </div>
+                <button id="reloadFirewall" class="text-button">
+                  Обновить
+                </button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Порт</th>
+                      <th>Доступ / белый список</th>
+                      <th><span class="sr-only">Действия</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="ruleRows"></tbody>
+                </table>
+              </div>
+              <div class="card-body">
+                <p class="hint">
+                  По умолчанию открыты TCP 22, 80, 443, 2222. Остальные входящие
+                  TCP/UDP закрыты при активном Firewall. Loopback и внутренние
+                  Docker-соединения доступны.
+                </p>
+                <label for="trustedInterfaces"
+                  >Дополнительные внутренние интерфейсы</label
+                ><input id="trustedInterfaces" placeholder="wg0, tun0" />
+                <p class="hint">
+                  Только существующие виртуальные интерфейсы. Их входящий трафик
+                  будет доверенным.
+                </p>
+                <div class="form-actions">
+                  <button id="previewFirewall" class="secondary">
+                    Посмотреть nftables</button
+                  ><button id="applyFirewall" class="primary">
+                    Применить правила
+                  </button>
+                </div>
+                <pre id="rulesPreview" hidden></pre>
+              </div>
+            </article>
+          </div>
+          <p class="footnote">
+            Таблица XHTTP Manager дополняет существующие правила. Запреты UFW,
+            других Firewall и облачного провайдера продолжают действовать.
+          </p>
+        </section>
+        <section id="view-settings" class="view" hidden>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">ПАРАМЕТРЫ ПАНЕЛИ</p>
+              <h1>Ваше пространство<span class="accent">.</span></h1>
+              <p class="muted">
+                Настройки доступа сохраняются при обновлении и перезапуске.
+              </p>
+            </div>
+          </div>
+          <div class="overview-grid">
+            <article class="card">
+              <div class="card-heading">
+                <h2>Адрес панели</h2>
+                <span class="pill">HTTP :80</span>
+              </div>
+              <form id="settingsForm" class="card-body">
+                <label for="currentPath">Текущий путь</label
+                ><input id="currentPath" readonly /><label for="newPath"
+                  >Новый путь · необязательно</label
+                ><input
+                  id="newPath"
+                  placeholder="Оставьте пустым для случайного пути"
+                  minlength="25"
+                  maxlength="129"
+                />
+                <p class="hint">
+                  Не менее 24 символов после /. Без пробелов. При смене старый
+                  адрес сразу перестанет работать.
+                </p>
+                <div class="form-actions">
+                  <button id="rotatePath" class="primary">Сменить адрес</button>
+                </div>
+              </form>
+            </article>
+            <article class="card">
+              <div class="card-heading"><h2>Защита доступа</h2></div>
+              <div class="card-body">
+                <dl class="details">
+                  <div>
+                    <dt>Пользователь</dt>
+                    <dd id="settingsUser">—</dd>
+                  </div>
+                  <div>
+                    <dt>Авторизация</dt>
+                    <dd>Пароль + сессия</dd>
+                  </div>
+                  <div>
+                    <dt>Защита запросов</dt>
+                    <dd>CSRF / SameSite</dd>
+                  </div>
+                  <div>
+                    <dt>Срок сессии</dt>
+                    <dd>8 часов</dd>
+                  </div>
+                </dl>
+                <div class="notice">
+                  <strong>HTTP не шифрует трафик</strong>
+                  <p>
+                    Для доступа через Интернет используйте HTTPS на reverse
+                    proxy или доверенную VPN-сеть. Случайный путь дополняет
+                    авторизацию.
+                  </p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+        <footer>
+          XHTTP Manager <span>Инфраструктура без лишних действий.</span>
+        </footer>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>

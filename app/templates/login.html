@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="csrf-token" content="__CSRF__" />
+    <title>Вход · XHTTP Manager</title>
+    <link rel="stylesheet" href="__PATH__/assets/panel.css" />
+  </head>
+  <body class="login-page">
+    <main class="login-card">
+      <div class="brand">
+        <span class="logo">x/</span
+        ><span>XHTTP<span class="muted"> Manager</span></span>
+      </div>
+      <span class="eyebrow">СЕРВЕР ПОД ВАШИМ КОНТРОЛЕМ</span>
+      <h1>С возвращением.</h1>
+      <p class="muted">
+        Войдите, чтобы управлять маршрутами и доступом к серверу.
+      </p>
+      <!--ERROR-->
+      <form method="post" action="__PATH__/login">
+        <input type="hidden" name="csrf" value="__CSRF__" /><label
+          for="username"
+          >Логин</label
+        ><input
+          id="username"
+          name="username"
+          autocomplete="username"
+          required
+          maxlength="64"
+          autofocus
+        /><label for="password">Пароль</label
+        ><input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          maxlength="1024"
+        /><button class="primary full" type="submit">
+          Войти в панель <span aria-hidden="true">↗</span>
+        </button>
+      </form>
+      <p class="caption">XHTTP Manager · управление инфраструктурой</p>
+    </main>
+  </body>
+</html>
