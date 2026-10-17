@@ -20,7 +20,7 @@ Backend: FastAPI, nginx, systemd и nftables. Поддерживаются Ubunt
 Вручную загружать или клонировать репозиторий не требуется.
 
 ~~~bash
-sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive; rm -rf -- "$dir"'
+sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive --reset-password; rm -rf -- "$dir"'
 ~~~
 
 Эта же команда обновляет старую версию. Предварительно удалять её не нужно.
@@ -28,7 +28,7 @@ sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq cur
 При необходимости укажите внешний IP сервера:
 
 ~~~bash
-sudo env PANEL_HOSTS="203.0.113.10" bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive; rm -rf -- "$dir"'
+sudo env PANEL_HOSTS="203.0.113.10" bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive --reset-password; rm -rf -- "$dir"'
 ~~~
 
 За NAT укажите внешний IP явно. Несколько IP разделяйте пробелами.
@@ -50,7 +50,7 @@ sudo cat /var/backups/xhttp-manager/<идентификатор>/new-password.tx
 с флагом `--reset-password` (прежний пароль перестанет действовать, сессии будут отозваны):
 
 ~~~bash
-sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive --reset-password; rm -rf -- "$dir"'
+sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive --reset-password --reset-password; rm -rf -- "$dir"'
 ~~~
 
 Новый пароль сохраняется в доступном только root файле и показывается при следующих обновлениях.
@@ -82,7 +82,7 @@ sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq cur
 Повторно выполните ту же одну строку на сервере — новая версия скачается с GitHub:
 
 ~~~bash
-sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive; rm -rf -- "$dir"'
+sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive --reset-password; rm -rf -- "$dir"'
 ~~~
 
 Сохраняются логин, хеш пароля, ключ сессий, случайный URL, заглушки, origin-записи,
