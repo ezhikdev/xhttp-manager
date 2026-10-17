@@ -13,18 +13,22 @@ Backend: FastAPI, nginx, systemd и nftables. Поддерживаются Ubunt
 - Root-owned конфигурации и ограниченные helper: веб-процесс не редактирует nginx, sudoers и системные файлы.
 - Атомарные ревизии, nginx -t, возврат при ошибке и последние 30 ревизий маршрутов.
 
-## Установка
+## Установка одной командой
 
-Запускайте **эту обновлённую копию проекта** на сервере:
+Вставьте одну строку в терминал сервера. Она установит curl и сертификаты,
+скачает актуальную версию с GitHub и запустит установку.
+Вручную загружать или клонировать репозиторий не требуется.
 
 ~~~bash
-sudo bash ./install.sh --non-interactive
+sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive; rm -rf -- "$dir"'
 ~~~
 
-При необходимости задайте IP, по которому будете открывать панель:
+Эта же команда обновляет старую версию. Предварительно удалять её не нужно.
+
+При необходимости укажите внешний IP сервера:
 
 ~~~bash
-sudo env PANEL_HOSTS="203.0.113.10" bash ./install.sh --non-interactive
+sudo env PANEL_HOSTS="203.0.113.10" bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive; rm -rf -- "$dir"'
 ~~~
 
 За NAT укажите внешний IP явно. Несколько IP разделяйте пробелами.
@@ -61,10 +65,10 @@ sudo cat /var/backups/xhttp-manager/<идентификатор>/new-password.tx
 
 ## Обновление существующей установки
 
-Из обновлённой рабочей копии выполните ту же команду:
+Повторно выполните ту же одну строку на сервере — новая версия скачается с GitHub:
 
 ~~~bash
-sudo bash ./install.sh --non-interactive
+sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive; rm -rf -- "$dir"'
 ~~~
 
 Сохраняются логин, хеш пароля, ключ сессий, случайный URL, заглушки, origin-записи,
