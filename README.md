@@ -46,6 +46,15 @@ sudo cat /var/backups/xhttp-manager/<идентификатор>/new-password.tx
 сохранила только хеш, вместо пароля выводится «сохранён — используйте прежний»: восстановить
 исходный пароль из хеша невозможно.
 
+Чтобы в этом случае получить **новый пароль прямо в терминале**, выполните одну команду
+с флагом `--reset-password` (прежний пароль перестанет действовать, сессии будут отозваны):
+
+~~~bash
+sudo bash -c 'set -Eeuo pipefail; apt-get update -qq; apt-get install -y -qq curl ca-certificates; dir=$(mktemp -d /tmp/xhttp-manager-install.XXXXXX); curl -fsSL "https://raw.githubusercontent.com/ezhikdev/xhttp-manager/main/install.sh?$(date +%s)" -o "$dir/install.sh"; bash "$dir/install.sh" --non-interactive --reset-password; rm -rf -- "$dir"'
+~~~
+
+Новый пароль сохраняется в доступном только root файле и показывается при следующих обновлениях.
+
 Свой логин/пароль можно передать переменными PANEL_USER / PANEL_PASS.
 Не помещайте действующие пароли в публичные скрипты, Git и журналы CI.
 

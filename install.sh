@@ -2,10 +2,12 @@
 set -Eeuo pipefail
 umask 022
 ACTIVATE_FIREWALL=0
+RESET_PASSWORD=0
 for arg in "$@"; do
   case "$arg" in
     --non-interactive) ;;
     --activate-firewall) ACTIVATE_FIREWALL=1 ;;
+    --reset-password) RESET_PASSWORD=1 ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
@@ -121,6 +123,7 @@ fi
 export PANEL_HOSTS=${PANEL_HOSTS:-$(hostname -I)}
 export PANEL_USER=${PANEL_USER:-}
 export PANEL_PASS=${PANEL_PASS:-}
+export XHTTP_RESET_PASSWORD=$RESET_PASSWORD
 export PANEL_PATH=${PANEL_PATH:-}
 export PANEL_HTTPS_ONLY=${PANEL_HTTPS_ONLY:-}
 nginx -T > "$BACKUP/nginx-before.txt" 2>&1
@@ -160,7 +163,7 @@ if not re.fullmatch(r'[A-Za-z0-9_.@-]{1,64}',user):
     sys.exit('Invalid panel username')
 password=os.environ.get('PANEL_PASS')
 oldhash=old.get('PANEL_PASSWORD_HASH')
-if not password and not oldhash:
+if not password and (not oldhash or os.environ['XHTTP_RESET_PASSWORD'] == '1'):
     password=secrets.token_urlsafe(24)
 if password:
     salt=secrets.token_bytes(16)

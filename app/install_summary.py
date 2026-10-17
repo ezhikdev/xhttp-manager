@@ -132,6 +132,8 @@ def show_summary(config_path, settings_path, backup, action, stream=None):
         )
     print(paint("╰" + "─" * (width + 4) + "╯", "2"), file=stream)
     if password_file:
+        if action == "upgrade" and password_file.parent == backup:
+            print("  Установлен новый пароль. Предыдущие сессии отозваны.", file=stream)
         if action == "upgrade" and password_file.parent != backup:
             print(
                 "  Пароль не менялся. Показан сохранённый пароль, проверенный по хешу.", file=stream
@@ -139,7 +141,11 @@ def show_summary(config_path, settings_path, backup, action, stream=None):
         print("  Файл с паролем (только root): " + visible(password_file), file=stream)
     else:
         print("  В системе хранится только хеш: показать прежний пароль невозможно.", file=stream)
-        print("  Пароль не сброшен. Для его смены задайте PANEL_PASS при установке.", file=stream)
+        print(
+            "  Чтобы создать и показать новый пароль, запустите установщик с --reset-password.",
+            file=stream,
+        )
+        print("  Без этого флага пароль не сбрасывается.", file=stream)
     print("  Резервная копия: " + visible(backup), file=stream)
     print("  Firewall: настройка и подтверждение правил — в панели.", file=stream)
     if config.get("PANEL_HTTPS_ONLY") == "1":
