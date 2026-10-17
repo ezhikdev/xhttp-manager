@@ -19,6 +19,8 @@ esac
 APP_DIR=/opt/xhttp-manager
 ETC_DIR=/etc/xhttp-manager
 APP_USER=xhttpmgr
+INSTALL_ACTION=install
+if [[ -f "$ETC_DIR/config.env" ]]; then INSTALL_ACTION=upgrade; fi
 STAMP=$(date -u +%Y%m%dT%H%M%S)-$$
 RELEASE=$APP_DIR/releases/$STAMP
 BACKUP=/var/backups/xhttp-manager/$STAMP
@@ -310,8 +312,11 @@ PY
 fi
 HOST=${PANEL_HOSTS%% *}
 if [[ "$HOST" == *:* ]]; then HOST="[$HOST]"; fi
-echo "XHTTP Manager installed. URL: http://${HOST}${PANEL_PATH}"
-echo "Credentials preserved on upgrade. Backups: $BACKUP"
-if [[ -f "$BACKUP/new-password.txt" ]]; then echo "New password: $BACKUP/new-password.txt (root only)."; fi
-echo 'Firewall: activate and confirm in the panel. Host networking is unchanged by default.'
-echo 'Use HTTPS or a trusted VPN for administration over untrusted networks.'
+if ! "$RELEASE/venv/bin/python" "$APP_DIR/app/install_summary.py" \
+  --config "$ETC_DIR/config.env" --settings "$ETC_DIR/data/settings.json" \
+  --backup "$BACKUP" --action "$INSTALL_ACTION"; then
+  echo "XHTTP Manager installed. URL: http://${HOST}${PANEL_PATH}"
+  echo "Summary unavailable. Login configuration: $ETC_DIR/config.env"
+  if [[ -f "$BACKUP/new-password.txt" ]]; then echo "Password file (root only): $BACKUP/new-password.txt"; fi
+  echo "Backups: $BACKUP"
+fi
